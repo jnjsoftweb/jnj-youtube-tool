@@ -17,5 +17,8 @@ npx shadcn@latest init
 
 ```sh
 cd /Users/youchan/Dev/Jnj-soft/Projects/internal/jnj-youtube-tool
-github -e pushRepo -u jnjsoftkmc -n jnj-youtube-tool -d "Youtube Tool By NEXT.JS"
+github -e pushRepo -u jnjsoftweb -n jnj-youtube-tool -d "Youtube Tool By NEXT.JS"
+
+# delete repo
+github -e deleteRepo -u jnjsoftkmc -n jnj-youtube-tool
 ```
