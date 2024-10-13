@@ -1,27 +1,27 @@
 import { NextResponse } from 'next/server';
-import { google } from 'googleapis';
+import { fetchAll } from '@/utils/api'; // api.ts에서 함수 가져오기
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const channelId = searchParams.get('channelId');
-  const apiKey = process.env.GOOGLE_API_KEY; // 환경 변수에서 API 키 가져오기
 
-  if (!apiKey || !channelId) {
+  if (!channelId) {
     return NextResponse.json(
-      { error: 'API 키 또는 channelId가 없습니다.' },
+      { error: 'channelId가 없습니다.' },
       { status: 400 }
     );
   }
 
-  const youtube = google.youtube('v3');
-  const response = await youtube.playlists.list({
-    part: 'snippet',
-    channelId: channelId,
-    maxResults: 25, // 필요한 경우 결과 수 조정
-    key: apiKey, // API 키 사용
-  });
+  const url = `https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&channelId=${channelId}&maxResults=25`;
 
-  //   console.log('response: ', response.data);
-
-  return NextResponse.json(response.data);
+  try {
+    const allPlaylists = await fetchAll(url); // 모든 playlists 가져오기
+    return NextResponse.json(allPlaylists); // 모든 재생목록 반환
+  } catch (error) {
+    console.error('Error fetching playlists:', error);
+    return NextResponse.json(
+      { error: 'YouTube API 요청 실패', details: error.message },
+      { status: 500 }
+    );
+  }
 }

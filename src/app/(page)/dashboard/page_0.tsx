@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Card, CardHeader, CardFooter } from '@/components/ui/card'; // shadcn에서 Card 컴포넌트 가져오기
 import { Button } from '@/components/ui/button'; // shadcn에서 Button 컴포넌트 가져오기
+import {
+  Dialog,
+  DialogOverlay,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'; // shadcn에서 Dialog 컴포넌트 가져오기
 
 export default function Dashboard() {
   const [channels, setChannels] = useState([]);
@@ -11,13 +18,15 @@ export default function Dashboard() {
   const [token, setToken] = useState('');
   const [expandedChannelId, setExpandedChannelId] = useState<string | null>(
     null
-  );
-  const [playlists, setPlaylists] = useState<{ [key: string]: any[] }>({});
-  const [selectedPlaylist, setSelectedPlaylist] = useState<any | null>(null);
-  const [videos, setVideos] = useState<any[]>([]);
+  ); // 아코디언 상태 추가
+  const [isOpen, setIsOpen] = useState(false); // 팝업 상태 추가
+  const [selectedChannel, setSelectedChannel] = useState(null); // 선택된 채널 상태 추가
+  const [playlists, setPlaylists] = useState<{ [key: string]: any[] }>({}); // 각 채널의 재생목록을 저장할 객체
+  const [selectedPlaylist, setSelectedPlaylist] = useState<any | null>(null); // 선택된 재생목록 상태
+  const [videos, setVideos] = useState<any[]>([]); // 동영상 목록 상태
   const [expandedPlaylistId, setExpandedPlaylistId] = useState<string | null>(
     null
-  );
+  ); // 아코디언 상태
 
   useEffect(() => {
     const tokenCookie = document.cookie
@@ -38,7 +47,7 @@ export default function Dashboard() {
         const data = await response.json();
         setChannels(data.items);
       } catch (err) {
-        setError('채널 정보를 가져오는 데 실패했습니다.');
+        setError('채널 정보를 가져오는 데 실패했습니다.' as any);
         console.error('채널 정보 가져오기 실패:', err);
       } finally {
         setLoading(false);
@@ -48,14 +57,23 @@ export default function Dashboard() {
     fetchChannels();
   }, []);
 
+  const handleLogout = () => {
+    // 로그아웃 처리: 쿠키 삭제
+    document.cookie =
+      'youtube_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'; // 쿠키 삭제
+    window.location.href = '/'; // 홈으로 리다이렉트
+  };
+
   const fetchPlaylists = async (channelId: string) => {
+    console.log('fetchPlaylists channelId: ', channelId);
     try {
       const response = await fetch(
         `/api/youtube/playlists?channelId=${channelId}`
       );
+      console.log('fetchPlaylists response status:', response.status); // 추가된 로그
       const data = await response.json();
-      console.log('Fetched Playlists:', data); // API 응답 확인
-      return data.items ? data.items : data; // items가 있으면 data.items를, 없으면 data를 반환
+      console.log('playlist data: ', data); // 추가된 로그
+      return data.items; // items가 존재하는지 확인
     } catch (err) {
       console.error('재생목록 가져오기 실패:', err);
       return [];
@@ -64,9 +82,7 @@ export default function Dashboard() {
 
   const handleFetchPlaylists = async (channelId: string) => {
     const fetchedPlaylists = await fetchPlaylists(channelId);
-    console.log('handleFetchPlaylists Fetched Playlists:', fetchedPlaylists); // 재생목록 확인
     setPlaylists((prev) => ({ ...prev, [channelId]: fetchedPlaylists }));
-    return fetchedPlaylists; // fetchedPlaylists 반환
   };
 
   const handleFetchVideos = async (playlistId: string) => {
@@ -80,12 +96,6 @@ export default function Dashboard() {
     }
     const data = await response.json();
     setVideos(data); // 동영상 목록 업데이트
-  };
-
-  const handleLogout = () => {
-    document.cookie =
-      'youtube_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    window.location.href = '/auth/google'; // 로그인 페이지로 리다이렉션
   };
 
   if (loading) {
@@ -141,14 +151,7 @@ export default function Dashboard() {
               <Button
                 onClick={async () => {
                   const channelId = channel.snippet.resourceId.channelId;
-                  // const channelId = 'UCcfz-8gGDYJfaRHYD7kkQpw';
-                  const fetchedPlaylists = await handleFetchPlaylists(
-                    channelId
-                  );
-                  console.log(
-                    'Fetched Playlists for channel:',
-                    fetchedPlaylists
-                  ); // 재생목록 확인
+                  await handleFetchPlaylists(channelId);
                 }}
               >
                 재생목록
@@ -170,7 +173,7 @@ export default function Dashboard() {
                               expandedPlaylistId === playlist.id
                                 ? null
                                 : playlist.id
-                            );
+                            ); // 아코디언 토글
                             setVideos([]); // 동영상 목록 초기화
                           }}
                         >
@@ -178,13 +181,13 @@ export default function Dashboard() {
                         </Button>
                         <Button
                           onClick={async () => {
-                            setSelectedPlaylist(playlist);
-                            await handleFetchVideos(playlist.id);
+                            setSelectedPlaylist(playlist); // 동영상 목록을 가져오기 전에 재생목록 선택
+                            await handleFetchVideos(playlist.id); // 동영상 목록 가져오기
                             setExpandedPlaylistId(
                               expandedPlaylistId === playlist.id
                                 ? null
                                 : playlist.id
-                            );
+                            ); // 아코디언 토글
                           }}
                         >
                           동영상목록
@@ -209,7 +212,7 @@ export default function Dashboard() {
                                   src={
                                     video.snippet.thumbnails?.default?.url ||
                                     '/default-thumbnail.jpg'
-                                  }
+                                  } // 기본 이미지 경로
                                   alt={video.snippet.title}
                                 />
                                 <p>{video.snippet.title}</p>
