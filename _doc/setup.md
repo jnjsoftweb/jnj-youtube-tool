@@ -22,3 +22,26 @@ github -e pushRepo -u jnjsoftweb -n jnj-youtube-tool -d "Youtube Tool By NEXT.JS
 # delete repo
 github -e deleteRepo -u jnjsoftkmc -n jnj-youtube-tool
 ```
+
+## shadcn-ui
+
+```
+# button 컴포넌트 생성
+npx shadcn@latest add card
+```
+
+## button 컴포넌트 테스트
+
+> `src/app/(test)/shadcn/button/page.tsx`
+
+```tsx
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
+  return (
+    <div>
+      <Button>Click me</Button>
+    </div>
+  );
+}
+```
